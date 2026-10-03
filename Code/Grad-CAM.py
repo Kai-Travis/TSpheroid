@@ -13,9 +13,6 @@ import matplotlib.pyplot as plt
 # SETTINGS
 # ============================================================
 
-# Run this script from:
-# C:\Github\TSpheroid\Models
-
 MODEL_FILE = Path(r"C:\Github\TSpheroid\Models\best_resnet18_0h_7h.pth")
 
 DATASET_FILE = Path(
@@ -26,32 +23,19 @@ OUTPUT_FOLDER = Path(r"C:\Github\TSpheroid\GRADCAMResults")
 OUTPUT_FOLDER.mkdir(exist_ok=True)
 
 # Put the sample_id you want to inspect here.
-# Example:
 SAMPLE_ID = "EXP1_050"
 
 
-# ============================================================
-# DEVICE
-# ============================================================
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 print("Device:", device)
 
-
-# ============================================================
-# IMAGE TRANSFORM
-# ============================================================
 
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
 ])
 
-
-# ============================================================
-# RESNET18 BACKBONE
-# ============================================================
+##RESNETETTTTTT
 
 def create_backbone():
     backbone = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
@@ -61,10 +45,7 @@ def create_backbone():
 
     return backbone
 
-
-# ============================================================
-# TWO-BRANCH MODEL
-# ============================================================
+#USE 0 AND 7 HOUR IMAGE MODEL
 
 class TwoBranchResNet(nn.Module):
 
@@ -90,11 +71,6 @@ class TwoBranchResNet(nn.Module):
 
         return output
 
-
-# ============================================================
-# LOAD MODEL
-# ============================================================
-
 model = TwoBranchResNet()
 
 checkpoint = torch.load(
@@ -102,18 +78,12 @@ checkpoint = torch.load(
     map_location=device
 )
 
-# Your training script saved only the regression head.
 model.regression_head.load_state_dict(checkpoint)
 
 model = model.to(device)
 model.eval()
 
 print("Model loaded.")
-
-
-# ============================================================
-# FIND SAMPLE
-# ============================================================
 
 df = pd.read_csv(DATASET_FILE)
 
@@ -137,11 +107,6 @@ print("0 h:", image_0h_path)
 print("7 h:", image_7h_path)
 print("Actual LDH:", actual_ldh)
 
-
-# ============================================================
-# LOAD IMAGES
-# ============================================================
-
 original_0h = Image.open(image_0h_path).convert("L")
 original_7h = Image.open(image_7h_path).convert("L")
 
@@ -161,10 +126,6 @@ image_7h = transforms.Normalize(
 )(image_7h)
 image_7h = image_7h.unsqueeze(0).to(device)
 
-
-# ============================================================
-# GRAD-CAM CLASS
-# ============================================================
 
 class GradCAM:
 
@@ -226,10 +187,7 @@ class GradCAM:
 
         return cam.detach().cpu().numpy()
 
-
-# ============================================================
 # CREATE GRAD-CAM OBJECTS
-# ============================================================
 
 # Last convolutional layer of each ResNet
 target_layer_0h = model.backbone_0h.layer4[-1].conv2
@@ -245,11 +203,6 @@ gradcam_7h = GradCAM(
     target_layer_7h
 )
 
-
-# ============================================================
-# FORWARD PASS
-# ============================================================
-
 model.zero_grad()
 
 prediction = model(
@@ -261,20 +214,11 @@ predicted_ldh = prediction.item()
 
 print("Predicted LDH:", predicted_ldh)
 
-
-# ============================================================
-# GRAD-CAM FOR 0 h
-# ============================================================
+#GRAD FOR 0
 
 cam_0h = gradcam_0h.generate(prediction)
 
-
-# ============================================================
-# GRAD-CAM FOR 7 h
-# ============================================================
-
-# We need another forward pass because the previous backward
-# pass consumed the computation graph.
+#GRAD FOR 7
 
 model.zero_grad()
 
@@ -284,11 +228,6 @@ prediction = model(
 )
 
 cam_7h = gradcam_7h.generate(prediction)
-
-
-# ============================================================
-# PREPARE ORIGINAL IMAGES
-# ============================================================
 
 original_0h_np = np.array(
     original_0h.resize((224, 224)),
@@ -300,21 +239,11 @@ original_7h_np = np.array(
     dtype=np.float32
 ) / 255.0
 
-
-# ============================================================
-# PLOT
-# ============================================================
-
 fig, axes = plt.subplots(
     2,
     2,
     figsize=(10, 10)
 )
-
-
-# -------------------------
-# 0 h original
-# -------------------------
 
 axes[0, 0].imshow(
     original_0h_np,
@@ -323,11 +252,6 @@ axes[0, 0].imshow(
 
 axes[0, 0].set_title("0 h — Original")
 axes[0, 0].axis("off")
-
-
-# -------------------------
-# 0 h Grad-CAM
-# -------------------------
 
 axes[0, 1].imshow(
     original_0h_np,
@@ -343,11 +267,6 @@ axes[0, 1].imshow(
 axes[0, 1].set_title("0 h — Grad-CAM")
 axes[0, 1].axis("off")
 
-
-# -------------------------
-# 7 h original
-# -------------------------
-
 axes[1, 0].imshow(
     original_7h_np,
     cmap="gray"
@@ -355,11 +274,6 @@ axes[1, 0].imshow(
 
 axes[1, 0].set_title("7 h — Original")
 axes[1, 0].axis("off")
-
-
-# -------------------------
-# 7 h Grad-CAM
-# -------------------------
 
 axes[1, 1].imshow(
     original_7h_np,
@@ -384,11 +298,6 @@ fig.suptitle(
 )
 
 plt.tight_layout()
-
-
-# ============================================================
-# SAVE
-# ============================================================
 
 output_file = OUTPUT_FOLDER / f"{SAMPLE_ID}_gradcam.png"
 

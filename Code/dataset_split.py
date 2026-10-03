@@ -106,9 +106,7 @@ dataset = dataset[columns]
 
 dataset.to_csv(OUTPUT_FILE, index=False, encoding="utf-8-sig")
 
-print("\n========================================")
 print("Dataset split complete")
-print("========================================")
 
 print(f"Total:      {len(dataset)}")
 print(f"Train:      {(dataset['split'] == 'train').sum()}")

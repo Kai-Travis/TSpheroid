@@ -9,10 +9,7 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from torchvision import models, transforms
 
-
-# ============================================================
 # Settings
-# ============================================================
 
 ROOT = Path(r"D:\TrainingData")
 CSV_FILE = ROOT / "metadata" / "dataset_split.csv"
@@ -27,11 +24,6 @@ device = torch.device(
 
 print("Device:", device)
 
-
-# ============================================================
-# Transform
-# ============================================================
-
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -42,10 +34,7 @@ normalize = transforms.Normalize(
     std=[0.229, 0.224, 0.225]
 )
 
-
-# ============================================================
 # Dataset
-# ============================================================
 
 class SpheroidDataset(Dataset):
 
@@ -64,10 +53,7 @@ class SpheroidDataset(Dataset):
 
         row = self.df.iloc[idx]
 
-
-        # ----------------------------------------------------
         # 0 h
-        # ----------------------------------------------------
 
         image_0h_path = Path(row["image_0h"])
 
@@ -84,9 +70,7 @@ class SpheroidDataset(Dataset):
         image_0h = normalize(image_0h)
 
 
-        # ----------------------------------------------------
         # 7 h
-        # ----------------------------------------------------
 
         image_7h_path = Path(row["image_7h"])
 
@@ -102,10 +86,7 @@ class SpheroidDataset(Dataset):
 
         image_7h = normalize(image_7h)
 
-
-        # ----------------------------------------------------
         # LDH
-        # ----------------------------------------------------
 
         label = torch.tensor(
             row["LDH_cytotoxicity"],
@@ -121,10 +102,7 @@ class SpheroidDataset(Dataset):
             sample_id
         )
 
-
-# ============================================================
 # Validation dataset
-# ============================================================
 
 dataset = SpheroidDataset(
     CSV_FILE,
@@ -140,10 +118,6 @@ loader = DataLoader(
 print("Validation samples:", len(dataset))
 
 
-# ============================================================
-# Recreate the ResNet feature extractor
-# ============================================================
-
 resnet = models.resnet18(
     weights="DEFAULT"
 )
@@ -153,11 +127,6 @@ resnet.fc = nn.Identity()
 resnet = resnet.to(device)
 
 resnet.eval()
-
-
-# ============================================================
-# Recreate regression head
-# ============================================================
 
 regression_head = nn.Linear(
     1024,
@@ -176,10 +145,6 @@ regression_head = regression_head.to(device)
 regression_head.eval()
 
 
-# ============================================================
-# Make predictions
-# ============================================================
-
 results = []
 
 with torch.no_grad():
@@ -195,11 +160,6 @@ with torch.no_grad():
 
         images_7h = images_7h.to(device)
 
-
-        # ----------------------------------------------------
-        # Extract features
-        # ----------------------------------------------------
-
         features_0h = resnet(
             images_0h
         )
@@ -208,11 +168,6 @@ with torch.no_grad():
             images_7h
         )
 
-
-        # ----------------------------------------------------
-        # Combine features
-        # ----------------------------------------------------
-
         combined_features = torch.cat(
             [
                 features_0h,
@@ -220,11 +175,6 @@ with torch.no_grad():
             ],
             dim=1
         )
-
-
-        # ----------------------------------------------------
-        # Predict LDH
-        # ----------------------------------------------------
 
         outputs = regression_head(
             combined_features
@@ -258,9 +208,7 @@ with torch.no_grad():
             })
 
 
-# ============================================================
 # Results
-# ============================================================
 
 results_df = pd.DataFrame(results)
 
@@ -297,10 +245,6 @@ ss_tot = np.sum(
 r2 = 1 - (ss_res / ss_tot)
 
 
-# ============================================================
-# Print results
-# ============================================================
-
 print()
 print("RESULTS")
 print("=" * 60)
@@ -331,9 +275,7 @@ print("Predictions:")
 print(results_df.to_string(index=False))
 
 
-# ============================================================
 # Save CSV
-# ============================================================
 
 OUTPUT_FILE = Path(
     "predictions_0h_7h.csv"
