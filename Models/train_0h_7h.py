@@ -115,9 +115,9 @@ optimizer = torch.optim.Adam(
     regression_head.parameters(), lr = LEARNING_RATE
 )
 
-def evaluate(resnet, regression_head, loader):
+def evaluate(resnet, waaa, loader):
     resnet.eval()
-    regression_head.eval()
+    waaa.eval()
 
     predictions = []
     targets = []
